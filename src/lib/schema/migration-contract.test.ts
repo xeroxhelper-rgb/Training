@@ -12,6 +12,11 @@ describe("v2 schema migration contract", () => {
     expect(migration).not.toMatch(/drop\s+table/i);
   });
 
+  it("stores employee numbers as numeric identifiers", () => {
+    expect(migration).toContain("employee_number bigint");
+    expect(migration).not.toContain("employee_number text");
+  });
+
   it("protects employee history and completion integrity with database constraints", () => {
     expect(migration).toContain("exclude using gist");
     expect(migration).toContain("unique (session_id, employee_id)");

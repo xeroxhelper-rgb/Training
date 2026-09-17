@@ -5,7 +5,7 @@ type Table<Row, Insert = Partial<Row>, Update = Partial<Row>> = { Row: Row; Inse
 export type Database = {
   public: {
     Tables: {
-      employees: Table<{ employee_id: number; employee_number: string; name: string; birth_date: string | null; position: string | null; svc_team: string | null; hire_date: string | null; resign_date: string | null; status: "재직" | "휴직" | "퇴사"; email: string | null; created_at: string; updated_at: string }>;
+      employees: Table<{ employee_id: number; employee_number: number; name: string; birth_date: string | null; position: string | null; svc_team: string | null; hire_date: string | null; resign_date: string | null; status: "재직" | "휴직" | "퇴사"; email: string | null; created_at: string; updated_at: string }>;
       departments: Table<{ department_id: number; department_code: string; name: string; parent_department_id: number | null; is_active: boolean; created_at: string }>;
       employment_history: Table<{ employment_history_id: number; employee_id: number; department_id: number; position: string | null; start_date: string; end_date: string | null; reason: string | null; created_at: string }>;
       training_courses: Table<{ course_id: number; course_code: string; course_name: string; target_model: string | null; description: string | null; created_date: string; is_active: boolean; threshold_percent: number; status: "draft" | "active" | "archived"; validity_months: number | null; owner_user_id: string | null; created_at: string }>;
@@ -19,7 +19,7 @@ export type Database = {
       eligibility_rules: Table<{ rule_id: number; rule_group_id: number; field: string; operator: string; value: string }>;
       eligibility_employee_exceptions: Table<{ rule_group_id: number; employee_id: number; is_included: boolean; reason: string | null }>;
       import_batches: Table<{ import_batch_id: number; session_id: number; file_name: string; row_count: number; accepted_count: number; rejected_count: number; status: string; created_by: string | null; created_at: string }>;
-      import_rows: Table<{ import_row_id: number; import_batch_id: number; row_number: number; employee_number: string | null; raw_data: Json; normalized_data: Json | null; error_code: string | null; error_message: string | null }>;
+      import_rows: Table<{ import_row_id: number; import_batch_id: number; row_number: number; employee_number: number | null; raw_data: Json; normalized_data: Json | null; error_code: string | null; error_message: string | null }>;
       user_role_scopes: Table<{ user_id: string; role: string; department_id: number | null; created_at: string }>;
       audit_logs: Table<{ audit_log_id: number; actor_user_id: string | null; action: string; entity_name: string; entity_id: string | null; before_data: Json | null; after_data: Json | null; created_at: string }>;
       metric_snapshots: Table<{ metric_snapshot_id: number; snapshot_date: string; course_id: number | null; department_id: number | null; target_count: number; completed_count: number; completion_rate: number; created_at: string }>;

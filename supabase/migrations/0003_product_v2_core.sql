@@ -22,11 +22,25 @@ do $$ begin
   create type public.rule_operator as enum ('equals', 'not_equals', 'contains', 'in');
 exception when duplicate_object then null; end $$;
 
-alter table public.employees add column if not exists employee_number text;
+do $$ begin
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'employees'
+      and column_name = 'employee_number' and data_type = 'text'
+  ) then
+    alter table public.employees
+      alter column employee_number type bigint
+      using nullif(regexp_replace(employee_number, '[^0-9]', '', 'g'), '')::bigint;
+  end if;
+end $$;
+alter table public.employees add column if not exists employee_number bigint;
 update public.employees
-set employee_number = 'LEGACY-' || employee_id
+set employee_number = 2000000000 + employee_id
 where employee_number is null;
 alter table public.employees alter column employee_number set not null;
+alter table public.employees drop constraint if exists employees_employee_number_range;
+alter table public.employees add constraint employees_employee_number_range
+  check (employee_number between 1000000000 and 9999999999);
 create unique index if not exists employees_employee_number_key
   on public.employees(employee_number);
 
@@ -192,7 +206,7 @@ create table if not exists public.import_rows (
   import_row_id bigint generated always as identity primary key,
   import_batch_id bigint not null references public.import_batches(import_batch_id) on delete cascade,
   row_number integer not null,
-  employee_number text,
+  employee_number bigint,
   raw_data jsonb not null,
   normalized_data jsonb,
   error_code text,
