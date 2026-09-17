@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { getSafeNextPath } from "@/lib/auth/guards";
+import { getLoginErrorMessage } from "@/lib/auth/login-error";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
@@ -33,7 +34,13 @@ export async function login(_state: LoginState, formData: FormData): Promise<Log
     password: parsed.data.password,
   });
 
-  if (error) return { formError: "이메일 또는 비밀번호를 확인하세요." };
+  if (error) {
+    console.error("[auth.login] Supabase sign-in failed", {
+      code: error.code,
+      status: error.status,
+    });
+    return { formError: getLoginErrorMessage(error) };
+  }
 
   redirect(getSafeNextPath(parsed.data.next));
 }
