@@ -80,7 +80,9 @@ with active_employees as (
   union
   select i.employee_id, 'exception'::text, null::bigint from included i
 ), legacy_targets as (
-  select distinct t.employee_id, 'legacy-target'::text, null::bigint
+  select distinct t.employee_id,
+    'legacy-target'::text as source,
+    null::bigint as matched_group_id
   from public.training_targets t
   join active_employees ae on ae.employee_id = t.employee_id
   where t.course_id = p_course_id

@@ -28,4 +28,9 @@ describe("v2 schema migration contract", () => {
     expect(functionsMigration).toContain("left join lateral");
     expect(functionsMigration).not.toContain("order by h.start_date desc nulls last");
   });
+
+  it("names legacy target columns used by the eligibility union", () => {
+    expect(functionsMigration).toContain("'legacy-target'::text as source");
+    expect(functionsMigration).toContain("null::bigint as matched_group_id");
+  });
 });
