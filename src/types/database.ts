@@ -20,7 +20,7 @@ export type Database = {
       eligibility_employee_exceptions: Table<{ rule_group_id: number; employee_id: number; is_included: boolean; reason: string | null }>;
       import_batches: Table<{ import_batch_id: number; session_id: number; file_name: string; row_count: number; accepted_count: number; rejected_count: number; status: string; created_by: string | null; created_at: string }>;
       import_rows: Table<{ import_row_id: number; import_batch_id: number; row_number: number; employee_number: number | null; raw_data: Json; normalized_data: Json | null; error_code: string | null; error_message: string | null }>;
-      user_role_scopes: Table<{ user_id: string; role: string; department_id: number | null; created_at: string }>;
+      user_role_scopes: Table<{ scope_id: number; user_id: string; role: string; employee_id: number | null; department_id: number | null; course_id: number | null; created_at: string }>;
       audit_logs: Table<{ audit_log_id: number; actor_user_id: string | null; action: string; entity_name: string; entity_id: string | null; before_data: Json | null; after_data: Json | null; created_at: string }>;
       metric_snapshots: Table<{ metric_snapshot_id: number; snapshot_date: string; course_id: number | null; department_id: number | null; target_count: number; completed_count: number; completion_rate: number; created_at: string }>;
     };

@@ -220,7 +220,8 @@ create table if not exists public.import_rows (
 create table if not exists public.user_role_scopes (
   scope_id bigint generated always as identity primary key,
   user_id uuid not null references auth.users(id) on delete cascade,
-  role text not null check (role in ('admin', 'hr', 'manager', 'instructor', 'executive')),
+  role text not null check (role in ('system_admin', 'hr', 'manager', 'instructor', 'employee', 'executive')),
+  employee_id bigint references public.employees(employee_id),
   department_id bigint references public.departments(department_id),
   created_at timestamptz not null default now(),
   unique (user_id, role, department_id)

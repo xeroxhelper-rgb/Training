@@ -31,6 +31,17 @@ npm run dev
 - `/login` 로그인 화면과 `/auth/confirm` PKCE 콜백 경로를 제공합니다.
 - 로컬 프로토타입을 계속 확인하려면 `NEXT_PUBLIC_DEMO_MODE=true`를 사용합니다. Supabase Auth 연결 시에는 `false`로 바꾸고 `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`를 설정합니다.
 
+## 인증·권한 적용
+
+`supabase/migrations/0004_product_v2_security.sql`은 익명(`anon`)의 업무 테이블 접근을 차단하고 로그인 사용자(`authenticated`)에게 역할 범위 기반 조회 권한을 부여합니다. Supabase Auth에서 사용자를 만든 뒤 SQL Editor에서 해당 사용자의 UUID를 역할 범위에 등록해야 합니다.
+
+```sql
+insert into public.user_role_scopes (user_id, role)
+values ('SUPABASE_AUTH_USER_UUID', 'system_admin');
+```
+
+Vercel에서는 `NEXT_PUBLIC_DEMO_MODE=false`로 설정한 뒤 재배포해야 로그인 Proxy와 RLS가 적용됩니다.
+
 ## 검증
 
 ```bash
