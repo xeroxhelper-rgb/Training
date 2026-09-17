@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarDays, FileBarChart, FileUp, GraduationCap, LayoutDashboard, Search, Sparkles, Users } from "lucide-react";
+import { CalendarDays, FileBarChart, FileUp, GraduationCap, LayoutDashboard, LogOut, Search, Sparkles, Users } from "lucide-react";
+import { logout } from "@/app/auth/actions";
 
 const NAV = [
   { href: "/", label: "대시보드", icon: LayoutDashboard },
@@ -33,7 +34,7 @@ export default function Sidebar() {
         })}
       </nav>
       <div className="px-5 py-4 border-t border-white/10">
-        <div className="flex items-center gap-2.5"><span className="avatar">HR</span><div><p className="text-xs text-white/85">인사담당자</p><p className="text-[10px] text-white/40">전사 조회·관리</p></div></div>
+        <div className="flex items-center justify-between gap-2.5"><div className="flex items-center gap-2.5"><span className="avatar">HR</span><div><p className="text-xs text-white/85">인사담당자</p><p className="text-[10px] text-white/40">전사 조회·관리</p></div></div><form action={logout}><button type="submit" aria-label="로그아웃" title="로그아웃" className="text-white/55 hover:text-white"><LogOut size={16} /></button></form></div>
       </div>
     </aside>
   );
