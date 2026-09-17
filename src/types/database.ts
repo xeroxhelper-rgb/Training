@@ -5,7 +5,7 @@ type Table<Row, Insert = Partial<Row>, Update = Partial<Row>> = { Row: Row; Inse
 export type Database = {
   public: {
     Tables: {
-      employees: Table<{ employee_id: number; employee_number: number; name: string; birth_date: string | null; position: string | null; svc_team: string | null; hire_date: string | null; resign_date: string | null; status: "재직" | "휴직" | "퇴사"; email: string | null; created_at: string; updated_at: string }>;
+      employees: Table<{ employee_id: number; employee_number: number; name: string; birth_date: string | null; position: string | null; job_function: string | null; svc_team: string | null; hire_date: string | null; resign_date: string | null; status: "재직" | "휴직" | "퇴사"; email: string | null; created_at: string; updated_at: string }>;
       departments: Table<{ department_id: number; department_code: string; name: string; parent_department_id: number | null; is_active: boolean; created_at: string }>;
       employment_history: Table<{ employment_history_id: number; employee_id: number; department_id: number; position: string | null; start_date: string; end_date: string | null; reason: string | null; created_at: string }>;
       training_courses: Table<{ course_id: number; course_code: string; course_name: string; target_model: string | null; description: string | null; created_date: string; is_active: boolean; threshold_percent: number; status: "draft" | "active" | "archived"; validity_months: number | null; owner_user_id: string | null; created_at: string }>;
@@ -25,8 +25,11 @@ export type Database = {
       metric_snapshots: Table<{ metric_snapshot_id: number; snapshot_date: string; course_id: number | null; department_id: number | null; target_count: number; completed_count: number; completion_rate: number; created_at: string }>;
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
-    Enums: { employment_status: "active" | "leave" | "resigned"; course_status: "draft" | "active" | "archived"; session_status: "planned" | "open" | "closed" | "cancelled"; completion_status: "completed" | "failed" | "absent" | "cancelled"; rule_field: "department" | "position" | "employment_status" | "competency_tag"; rule_operator: "equals" | "not_equals" | "contains" | "in" };
+    Functions: {
+      course_eligibility: { Args: { p_course_id: number; p_as_of?: string }; Returns: { employee_id: number; source: string; matched_group_id: number | null }[] };
+      course_completion_summary: { Args: { p_course_id: number; p_as_of?: string; p_department_id?: number | null }; Returns: { target_count: number; completed_count: number; incomplete_count: number; completion_rate: number }[] };
+    };
+    Enums: { employment_status: "active" | "leave" | "resigned"; course_status: "draft" | "active" | "archived"; session_status: "planned" | "open" | "closed" | "cancelled"; completion_status: "completed" | "failed" | "absent" | "cancelled"; rule_field: "department" | "position" | "employment_status" | "competency_tag" | "job_function" | "hire_date"; rule_operator: "equals" | "not_equals" | "contains" | "in" };
     CompositeTypes: Record<string, never>;
   };
 };
