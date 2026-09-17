@@ -30,7 +30,10 @@ do $$ begin
   ) then
     alter table public.employees
       alter column employee_number type bigint
-      using nullif(regexp_replace(employee_number, '[^0-9]', '', 'g'), '')::bigint;
+      using case
+        when employee_number like 'LEGACY-%' then 2000000000 + employee_id
+        else nullif(regexp_replace(employee_number, '[^0-9]', '', 'g'), '')::bigint
+      end;
   end if;
 end $$;
 alter table public.employees add column if not exists employee_number bigint;
