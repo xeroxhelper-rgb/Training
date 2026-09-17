@@ -25,6 +25,12 @@ npm run dev
 
 현재 버튼과 CSV 반영은 화면 흐름만 제공하며 실제 저장되지 않습니다. 다음 단계에서 Supabase 스키마, Auth/RLS, 실제 CSV 트랜잭션을 연결합니다.
 
+## 인증 기반
+
+- Supabase SSR 클라이언트와 쿠키 세션 경계를 추가했습니다.
+- `/login` 로그인 화면과 `/auth/confirm` PKCE 콜백 경로를 제공합니다.
+- 로컬 프로토타입을 계속 확인하려면 `NEXT_PUBLIC_DEMO_MODE=true`를 사용합니다. Supabase Auth 연결 시에는 `false`로 바꾸고 `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`를 설정합니다.
+
 ## 검증
 
 ```bash
