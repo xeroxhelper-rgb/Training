@@ -11,7 +11,7 @@ security definer
 set search_path = public
 as $$
 with active_employees as (
-  select e.employee_id, e.department_id, e.position, e.job_function, e.status, e.hire_date
+  select e.employee_id, d.department_id, e.position, e.job_function, e.status, e.hire_date
   from public.employees e
   left join lateral (
     select h.department_id
