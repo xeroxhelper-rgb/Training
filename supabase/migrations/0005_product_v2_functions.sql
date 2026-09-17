@@ -12,21 +12,17 @@ set search_path = public
 as $$
 with active_employees as (
   select e.employee_id, e.department_id, e.position, e.job_function, e.status, e.hire_date
-  from (
-    select e.*, d.department_id,
-           row_number() over (partition by e.employee_id order by h.start_date desc nulls last) as rn
-    from public.employees e
-    left join lateral (
-      select h.department_id, h.position
-      from public.employment_history h
-      where h.employee_id = e.employee_id
-        and h.start_date <= p_as_of
-        and (h.end_date is null or h.end_date >= p_as_of)
-      order by h.start_date desc
-      limit 1
-    ) d on true
-  ) e
-  where e.rn = 1 and e.status <> '퇴사'
+  from public.employees e
+  left join lateral (
+    select h.department_id
+    from public.employment_history h
+    where h.employee_id = e.employee_id
+      and h.start_date <= p_as_of
+      and (h.end_date is null or h.end_date >= p_as_of)
+    order by h.start_date desc
+    limit 1
+  ) d on true
+  where e.status <> '퇴사'
 ), groups as (
   select g.rule_group_id, g.course_id
   from public.eligibility_rule_groups g where g.course_id = p_course_id
