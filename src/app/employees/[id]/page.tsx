@@ -1,32 +1,24 @@
 import Link from "next/link";
-import { ArrowLeft, BriefcaseBusiness, CheckCircle2, CircleAlert, History } from "lucide-react";
+import { ArrowLeft, BriefcaseBusiness, CheckCircle2, CircleAlert, History, Pencil } from "lucide-react";
 import { notFound } from "next/navigation";
 import PageHeader from "@/components/PageHeader";
 import { StatusBadge } from "@/components/Badge";
-import { employees } from "@/lib/demo/data";
-import { getEmployeeProfile } from "@/lib/demo/selectors";
+import { getDepartments, getEmployeeDetail, type EmployeeDetail } from "@/lib/repositories/employee-repository";
+import { updateEmployee } from "../actions";
 
-export function generateStaticParams() { return employees.map((employee) => ({ id: String(employee.id) })); }
+export const dynamic = "force-dynamic";
 
-export default async function EmployeeDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function EmployeeDetailPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ edit?: string; error?: string }> }) {
   const { id } = await params;
   const employeeId = Number(id);
-  if (!employees.some((employee) => employee.id === employeeId)) notFound();
-  const profile = getEmployeeProfile(employeeId);
-  return <div>
-    <PageHeader title={profile.employee.name} description={`${profile.employee.employeeNumber} · ${profile.department.name}`} action={<Link href="/employees" className="btn-secondary flex items-center gap-2"><ArrowLeft size={14} /> 직원 목록</Link>} />
-    <div className="page-content space-y-6">
-      <div className="notice"><CircleAlert size={16} /><span>교육 수료 이력은 실제 숙련도 또는 업무 적합성을 단독으로 보증하지 않습니다.</span></div>
-      <section className="profile-hero card">
-        <span className="profile-avatar">{profile.employee.name.slice(-2)}</span>
-        <div className="profile-name"><div className="flex items-center gap-2"><h2>{profile.employee.name}</h2><StatusBadge status={profile.employee.status} /></div><p>{profile.employee.jobFunction} · {profile.employee.position}</p></div>
-        <div className="profile-facts"><div><small>현재 부서</small><strong>{profile.department.name}</strong></div><div><small>입사일</small><strong>{profile.employee.hireDate}</strong></div><div><small>이메일</small><strong>{profile.employee.email}</strong></div></div>
-      </section>
-      <div className="two-column">
-        <section className="card"><div className="section-heading panel-heading"><div><span className="eyebrow">TRAINING</span><h2>교육 수료 이력</h2></div><CheckCircle2 size={19} /></div><div className="timeline-list">{profile.completions.map((completion) => <Link href={`/courses/${completion.courseId}`} className="timeline-item" key={completion.courseId}><span className="timeline-dot success" /><div><strong>{completion.courseName}</strong><p>{completion.round} · {completion.completionDate}</p><div className="tag-row">{completion.tags.map((tag) => <span className="tag" key={tag}>{tag}</span>)}</div></div></Link>)}</div></section>
-        <section className="card"><div className="section-heading panel-heading"><div><span className="eyebrow">REQUIRED</span><h2>현재 미수료 대상 과정</h2></div><CircleAlert size={19} /></div>{profile.incompleteCourses.length ? <div className="action-list">{profile.incompleteCourses.map((course) => <Link href={`/courses/${course.id}`} key={course.id}><span><strong>{course.name}</strong><small>{course.eligibilityLabel}</small></span><span className="status-pill warning">미수료</span></Link>)}</div> : <div className="empty-state">현재 미수료 대상 과정이 없습니다.</div>}</section>
-      </div>
-      <section className="card"><div className="section-heading panel-heading"><div><span className="eyebrow">CAREER</span><h2>부서 근무 이력</h2></div><History size={19} /></div><div className="career-timeline">{profile.departmentHistory.map((history) => <div className="career-row" key={`${history.departmentId}-${history.startDate}`}><span className="career-icon"><BriefcaseBusiness size={16} /></span><div><strong>{history.departmentName}</strong><p>{history.position} · {history.reason}</p></div><time>{history.startDate} — {history.endDate ?? "현재"}</time></div>)}</div></section>
-    </div>
+  const query = await searchParams;
+  const employee = await getEmployeeDetail(employeeId);
+  if (!employee) notFound();
+  const departments = query.edit === "1" ? await getDepartments() : [];
+  const error = query.error;
+  const detail = employee as EmployeeDetail;
+  return <div><PageHeader title={detail.name} description={`${detail.employeeNumber} · ${detail.departmentName}`} action={<div className="flex items-center gap-2"><Link href="/employees" className="btn-secondary flex items-center gap-2"><ArrowLeft size={14} /> 직원 목록</Link>{query.edit === "1" ? null : <Link href={`/employees/${detail.id}?edit=1`} className="btn-primary flex items-center gap-2"><Pencil size={14} /> 편집</Link>}</div>} />
+    <div className="page-content space-y-6">{error ? <div className="notice warning">{error}</div> : null}{query.edit === "1" ? <section className="card p-6"><form action={updateEmployee} className="form-grid"><input type="hidden" name="employee_id" value={employee.id} /><label>이름<input name="name" defaultValue={employee.name} required /></label><label>사번<input name="employee_number" defaultValue={employee.employeeNumber} inputMode="numeric" pattern="[0-9]{10}" maxLength={10} required /></label><label>입사일<input type="date" name="hire_date" defaultValue={employee.hireDate === "-" ? "" : employee.hireDate} required /></label><label>부서<select name="department" defaultValue={employee.departmentName} required>{departments.map((department) => <option key={department.department_id} value={department.name}>{department.name}</option>)}</select></label><label>직급<input name="position" defaultValue={employee.position === "미등록" ? "" : employee.position} /></label><label>상태<select name="status" defaultValue={employee.status} required><option>재직</option><option>휴직</option><option>퇴사</option></select></label><label className="md:col-span-2">이메일<input type="email" name="email" defaultValue={employee.email ?? ""} /></label><div className="flex gap-2 md:col-span-2"><button className="btn-primary" type="submit">저장</button><Link className="btn-secondary" href={`/employees/${employee.id}`}>취소</Link></div></form></section> : <><div className="notice"><CircleAlert size={16} /><span>교육 수료 이력은 실제 숙련도 또는 업무 적합성을 단독으로 보증하지 않습니다.</span></div><section className="profile-hero card"><span className="profile-avatar">{employee.name.slice(-2)}</span><div className="profile-name"><div className="flex items-center gap-2"><h2>{employee.name}</h2><StatusBadge status={employee.status} /></div><p>{employee.position} · {employee.departmentName}</p></div><div className="profile-facts"><div><small>현재 부서</small><strong>{employee.departmentName}</strong></div><div><small>입사일</small><strong>{employee.hireDate}</strong></div><div><small>이메일</small><strong>{employee.email ?? "-"}</strong></div></div></section><div className="two-column"><section className="card"><div className="section-heading panel-heading"><div><span className="eyebrow">TRAINING</span><h2>교육 수료 이력</h2></div><CheckCircle2 size={19} /></div><div className="timeline-list">{detail.completions.length ? detail.completions.map((completion) => <div className="timeline-item" key={`${completion.courseName}-${completion.round}`}><span className="timeline-dot success" /><div><strong>{completion.courseName}</strong><p>{completion.round} · {completion.completionDate ?? "-"}</p></div></div>) : <div className="empty-state">수료 이력이 없습니다.</div>}</div></section><section className="card"><div className="section-heading panel-heading"><div><span className="eyebrow">REQUIRED</span><h2>현재 미수료 대상 과정</h2></div><CircleAlert size={19} /></div><div className="empty-state">현재 미수료 대상 과정이 없습니다.</div></section></div><section className="card"><div className="section-heading panel-heading"><div><span className="eyebrow">CAREER</span><h2>부서 근무 이력</h2></div><History size={19} /></div><div className="career-timeline">{detail.departmentHistory.length ? detail.departmentHistory.map((history) => <div className="career-row" key={`${history.departmentName}-${history.startDate}`}><span className="career-icon"><BriefcaseBusiness size={16} /></span><div><strong>{history.departmentName}</strong><p>{history.position ?? "-"} · {history.reason ?? "-"}</p></div><time>{history.startDate} — {history.endDate ?? "현재"}</time></div>) : <div className="empty-state">부서 근무 이력이 없습니다.</div>}</div></section></>}</div>
   </div>;
 }
+

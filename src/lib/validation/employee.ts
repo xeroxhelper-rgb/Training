@@ -8,6 +8,14 @@ export type EmployeeInput = {
   email: string;
 };
 
+export type EmployeeEditableFields = Pick<EmployeeInput, "name" | "hireDate" | "department" | "status" | "position" | "email">;
+
+export function buildChangedEmployeeFields(current: Record<string, string | null>, next: Record<string, string | null>): Record<string, string | null> {
+  const changed: Record<string, string | null> = {};
+  for (const key of Object.keys(next)) if (current[key] !== next[key]) changed[key] = next[key];
+  return changed;
+}
+
 export function validateEmployeeInput(input: EmployeeInput): { ok: true } | { ok: false; error: string } {
   if (!input.name.trim() || !input.employeeNumber.trim() || !input.hireDate.trim() || !input.department.trim() || !input.status.trim()) {
     return { ok: false, error: "이름, 사번, 입사일, 부서, 상태는 필수입니다." };
