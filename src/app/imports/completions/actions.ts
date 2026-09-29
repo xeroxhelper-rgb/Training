@@ -10,6 +10,8 @@ export async function importCompletionCsv(formData: FormData) {
   if (!sessionId || !(file instanceof File) || file.size === 0) redirect(`/imports/completions?session=${sessionId}&error=파일을 선택하세요`);
   const rows = parseCompletionCsv(await file.text());
   const supabase = await createClient();
+  const { data: authData } = await supabase.auth.getUser();
+  if (!authData.user) redirect(`/imports/completions?session=${sessionId}&error=업로드 세션이 없습니다. 로그아웃 후 다시 로그인하세요.`);
   const { data: session } = await supabase.from("training_sessions").select("session_id").eq("session_id", sessionId).maybeSingle();
   if (!session) redirect(`/imports/completions?session=${sessionId}&error=차수를 찾을 수 없습니다`);
   const numbers = rows.flatMap((row) => row.employeeNumber === null ? [] : [row.employeeNumber]);
@@ -18,8 +20,12 @@ export async function importCompletionCsv(formData: FormData) {
   const validRows = rows.filter((row) => !row.error && row.employeeNumber !== null && employeeMap.has(row.employeeNumber));
   const { data: batch, error: batchError } = await supabase.from("import_batches").insert({ session_id: sessionId, file_name: file.name, row_count: rows.length, accepted_count: validRows.length, rejected_count: rows.length - validRows.length, status: "applied" }).select("import_batch_id").single();
   if (batchError || !batch) redirect(`/imports/completions?session=${sessionId}&error=${encodeURIComponent(batchError?.message ?? "업로드 기록 저장 실패")}`);
-  await supabase.from("import_rows").insert(rows.map((row) => ({ import_batch_id: batch.import_batch_id, row_number: row.rowNumber, employee_number: row.employeeNumber, raw_data: row, normalized_data: row.error ? null : { employee_id: employeeMap.get(row.employeeNumber ?? 0), completion_date: row.completionDate, status: row.status }, error_code: row.error ? "VALIDATION" : null, error_message: row.error })));
+  const { error: rowsError } = await supabase.from("import_rows").insert(rows.map((row) => ({ import_batch_id: batch.import_batch_id, row_number: row.rowNumber, employee_number: row.employeeNumber, raw_data: row, normalized_data: row.error ? null : { employee_id: employeeMap.get(row.employeeNumber ?? 0), completion_date: row.completionDate, status: row.status }, error_code: row.error ? "VALIDATION" : null, error_message: row.error })));
+  if (rowsError) redirect(`/imports/completions?session=${sessionId}&error=${encodeURIComponent(rowsError.message)}`);
   const completionRows = validRows.map((row) => ({ session_id: sessionId, employee_id: employeeMap.get(row.employeeNumber ?? 0), status: row.status, completion_date: row.status === "completed" ? row.completionDate : null }));
-  if (completionRows.length) await supabase.from("course_completions").upsert(completionRows, { onConflict: "session_id,employee_id" });
+  if (completionRows.length) {
+    const { error: completionError } = await supabase.from("course_completions").upsert(completionRows, { onConflict: "session_id,employee_id" });
+    if (completionError) redirect(`/imports/completions?session=${sessionId}&error=${encodeURIComponent(completionError.message)}`);
+  }
   redirect(`/imports/completions?session=${sessionId}&imported=${validRows.length}`);
 }
