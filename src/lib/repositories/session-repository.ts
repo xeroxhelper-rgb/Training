@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
+import type { SessionInput } from "@/lib/validation/training-admin";
 
 export type SessionListItem = {
   id: number; courseId: number; courseName: string; round: string; startsAt: string; endsAt: string;
@@ -10,6 +11,27 @@ export type SessionListItem = {
 
 export type SessionParticipant = { id: number; name: string; employeeNumber: number; department: string; position: string; jobFunction: string; result: "수료" | "미수료" | "예정" };
 export type SessionDetail = SessionListItem & { participants: SessionParticipant[] };
+
+export async function createSession(input: SessionInput, createdBy: string | null = null): Promise<number> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("training_sessions")
+    .insert({
+      course_id: input.courseId,
+      session_number: input.sessionNumber,
+      starts_at: input.startsAt,
+      ends_at: input.endsAt,
+      location: input.location || null,
+      instructor_name: input.instructorName || null,
+      status: input.status,
+      capacity: input.capacity ?? null,
+      created_by: createdBy,
+    })
+    .select("session_id")
+    .single();
+  if (error) throw new Error(`교육 차수 개설에 실패했습니다: ${error.message}`);
+  return Number(data.session_id);
+}
 
 function statusLabel(status: string): SessionListItem["status"] {
   if (status === "closed") return "마감";

@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
+import type { CourseInput } from "@/lib/validation/training-admin";
 
 export type CourseSummary = {
   targetCount: number;
@@ -19,6 +20,40 @@ export type CourseListItem = {
   validityMonths: number | null;
   summary: CourseSummary;
 };
+
+export type CourseOption = { id: number; code: string; name: string };
+
+export async function getCourseOptions(): Promise<CourseOption[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("training_courses")
+    .select("course_id, course_code, course_name")
+    .neq("status", "archived")
+    .order("course_name");
+  if (error) throw new Error(`교육 과정 목록을 불러오지 못했습니다: ${error.message}`);
+  return (data ?? []).map((course) => ({ id: Number(course.course_id), code: course.course_code, name: course.course_name }));
+}
+
+export async function createCourse(input: CourseInput, ownerUserId: string | null = null): Promise<number> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("training_courses")
+    .insert({
+      course_code: input.courseCode,
+      course_name: input.courseName,
+      target_model: input.targetModel || null,
+      description: input.description || null,
+      validity_months: input.validityMonths ?? null,
+      status: input.status,
+      is_active: input.status !== "archived",
+      threshold_percent: input.thresholdPercent,
+      owner_user_id: ownerUserId,
+    })
+    .select("course_id")
+    .single();
+  if (error) throw new Error(`교육 과정 등록에 실패했습니다: ${error.message}`);
+  return Number(data.course_id);
+}
 
 export async function getCourseSummary(courseId: number, asOf: string, departmentId?: number): Promise<CourseSummary> {
   const supabase = await createClient();
