@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getChangedCompletionRows, type CompletionRow } from "@/lib/completions/changed-rows";
 
 export async function updateCompletionStatus(formData: FormData) {
   const sessionId = Number(formData.get("session_id"));
@@ -31,12 +32,17 @@ export async function saveCompletionStatuses(formData: FormData) {
   const { data: authData } = await supabase.auth.getUser();
   if (!authData.user) redirect(`/login?next=/sessions/${sessionId}`);
   const today = new Date().toISOString().slice(0, 10);
+  const submittedRows: CompletionRow[] = employeeIds.map((employeeId) => ({ employee_id: employeeId, status: completedIds.has(employeeId) ? "completed" : "failed", completion_date: completedIds.has(employeeId) ? today : null }));
+  const { data: existingRows, error: existingError } = await supabase.from("course_completions").select("employee_id, status, completion_date").eq("session_id", sessionId).in("employee_id", employeeIds);
+  if (existingError) redirect(`/sessions/${sessionId}?error=${encodeURIComponent(existingError.message)}`);
+  const changedRows = getChangedCompletionRows(submittedRows, (existingRows ?? []).map((row) => ({ employee_id: Number(row.employee_id), status: row.status, completion_date: row.completion_date })));
+  if (changedRows.length === 0) redirect(`/sessions?saved=0`);
   const { error } = await supabase.from("course_completions").upsert(
-    employeeIds.map((employeeId) => ({ session_id: sessionId, employee_id: employeeId, status: completedIds.has(employeeId) ? "completed" : "failed", completion_date: completedIds.has(employeeId) ? today : null })),
+    changedRows.map((row) => ({ session_id: sessionId, ...row })),
     { onConflict: "session_id,employee_id" },
   );
   if (error) redirect(`/sessions/${sessionId}?error=${encodeURIComponent(error.message)}`);
-  redirect(`/sessions?saved=${employeeIds.length}`);
+  redirect(`/sessions?saved=${changedRows.length}`);
 }
 
 export async function removeParticipant(formData: FormData) {
