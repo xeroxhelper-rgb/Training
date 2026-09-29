@@ -38,3 +38,17 @@ export async function saveCompletionStatuses(formData: FormData) {
   if (error) redirect(`/sessions/${sessionId}?error=${encodeURIComponent(error.message)}`);
   redirect(`/sessions/${sessionId}?saved=${employeeIds.length}`);
 }
+
+export async function removeParticipant(formData: FormData) {
+  const sessionId = Number(formData.get("session_id"));
+  const employeeId = Number(formData.get("remove_employee_id"));
+  if (!sessionId || !employeeId) redirect(`/sessions/${sessionId}?error=삭제할 참여자가 없습니다`);
+  const supabase = await createClient();
+  const { data: authData } = await supabase.auth.getUser();
+  if (!authData.user) redirect(`/login?next=/sessions/${sessionId}`);
+  const { error: completionError } = await supabase.from("course_completions").delete().eq("session_id", sessionId).eq("employee_id", employeeId);
+  if (completionError) redirect(`/sessions/${sessionId}?error=${encodeURIComponent(completionError.message)}`);
+  const { error } = await supabase.from("session_participants").delete().eq("session_id", sessionId).eq("employee_id", employeeId);
+  if (error) redirect(`/sessions/${sessionId}?error=${encodeURIComponent(error.message)}`);
+  redirect(`/sessions/${sessionId}?removed=1`);
+}
