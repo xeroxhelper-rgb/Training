@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseCompletionBackup, serializeCompletionBackup } from "./completion-backup";
+import { matchesCompletionBackupFilters, parseCompletionBackup, serializeCompletionBackup } from "./completion-backup";
 
 describe("completion backup csv", () => {
   it("parses the standard header and quoted values", () => {
@@ -20,5 +20,11 @@ describe("completion backup csv", () => {
     const result = parseCompletionBackup(csv);
     expect(result.errors).toEqual([]);
     expect(result.rows[0]?.courseCode).toBe("SEC-001");
+  });
+
+  it("applies optional import filters without changing the backup key", () => {
+    const row = { employeeNumber: 2000000001, employeeName: "홍길동", departmentName: "A팀", courseCode: "SEC-001", courseName: "보안 교육", sessionId: 3, sessionNumber: 1, status: "completed" as const, completionDate: "2026-09-01" };
+    expect(matchesCompletionBackupFilters(row, { department: "A팀", courseId: 10, employeeNumber: 2000000001, sessionId: 3 }, { courseId: 10 })).toBe(true);
+    expect(matchesCompletionBackupFilters(row, { department: "B팀" }, { courseId: 10 })).toBe(false);
   });
 });

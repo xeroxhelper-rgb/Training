@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { parseCompletionCsv } from "@/lib/imports/completion-csv";
-import { applyCompletionBackup, parseCompletionBackup } from "@/lib/imports/completion-backup";
+import { applyCompletionBackup, matchesCompletionBackupFilters, parseCompletionBackup, type CompletionBackupFilters } from "@/lib/imports/completion-backup";
 import { getChangedCompletionRows, type CompletionRow } from "@/lib/completions/changed-rows";
 
 export async function importCompletionCsv(formData: FormData) {
@@ -49,19 +49,28 @@ export async function importCompletionBackup(formData: FormData) {
   const supabase = await createClient();
   const { data: authData } = await supabase.auth.getUser();
   if (!authData.user) redirect("/login?next=/imports/completions");
+  const filters: CompletionBackupFilters = {
+    department: String(formData.get("department") ?? "") || undefined,
+    courseId: Number(formData.get("course_id")) || undefined,
+    employeeNumber: Number(formData.get("employee_number")) || undefined,
+    sessionId: Number(formData.get("session_id")) || undefined,
+  };
   const numbers = Array.from(new Set(parsed.rows.map((row) => row.employeeNumber)));
   const sessionIds = Array.from(new Set(parsed.rows.map((row) => row.sessionId)));
   const [{ data: employees }, { data: sessions }] = await Promise.all([
-    supabase.from("employees").select("employee_id, employee_number").in("employee_number", numbers),
+    supabase.from("employees").select("employee_id, employee_number, svc_team").in("employee_number", numbers),
     supabase.from("training_sessions").select("session_id, course_id, session_number").in("session_id", sessionIds),
   ]);
-  const employeeMap = new Map((employees ?? []).map((row) => [Number(row.employee_number), Number(row.employee_id)]));
+  const employeeMap = new Map((employees ?? []).map((row) => [Number(row.employee_number), { id: Number(row.employee_id), department: row.svc_team ?? "" }]));
   const sessionMap = new Map((sessions ?? []).map((row) => [Number(row.session_id), row]));
   const rejected = [...parsed.errors];
   const valid = parsed.rows.flatMap((row) => {
-    if (!employeeMap.has(row.employeeNumber)) { rejected.push(`${row.employeeNumber}번 직원이 없습니다.`); return []; }
-    if (!sessionMap.has(row.sessionId)) { rejected.push(`${row.sessionId}번 차수가 없습니다.`); return []; }
-    return [{ row, employeeId: employeeMap.get(row.employeeNumber) as number }];
+    const employee = employeeMap.get(row.employeeNumber);
+    const session = sessionMap.get(row.sessionId);
+    if (!employee) { rejected.push(`${row.employeeNumber}번 직원이 없습니다.`); return []; }
+    if (!session) { rejected.push(`${row.sessionId}번 차수가 없습니다.`); return []; }
+    if (!matchesCompletionBackupFilters(row, filters, { courseId: Number(session.course_id) }) || (filters.department && employee.department !== filters.department)) { rejected.push(`${row.employeeNumber}번 행이 선택한 가져오기 조건과 다릅니다.`); return []; }
+    return [{ row, employeeId: employee.id }];
   });
   let applied = 0;
   for (const [sessionId, grouped] of Map.groupBy(valid, (item) => item.row.sessionId)) {

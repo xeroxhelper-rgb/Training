@@ -33,6 +33,13 @@ export function applyCompletionBackup(submitted: CompletionBackupCompletion[], e
   });
 }
 
+export function matchesCompletionBackupFilters(row: CompletionBackupRow, filters: CompletionBackupFilters, context: { courseId?: number } = {}) {
+  return (!filters.department || row.departmentName === filters.department)
+    && (!filters.employeeNumber || row.employeeNumber === filters.employeeNumber)
+    && (!filters.sessionId || row.sessionId === filters.sessionId)
+    && (!filters.courseId || context.courseId === filters.courseId);
+}
+
 function parseLine(line: string): string[] {
   const values: string[] = [];
   let value = "";
