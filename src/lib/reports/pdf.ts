@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { PDFDocument, rgb, type PDFFont } from "pdf-lib";
-import * as fontkit from "@pdf-lib/fontkit";
+import fontkit from "@pdf-lib/fontkit";
 
 export type ReportPdfInput = {
   title: string;
