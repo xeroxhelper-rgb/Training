@@ -30,3 +30,10 @@ export async function getEmployeeList(filters: EmployeeFilters = {}) {
     (departmentResult.data ?? []) as DepartmentRow[],
   );
 }
+
+export async function getDepartments() {
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("departments").select("department_id, name").order("name");
+  if (error) throw new Error(`부서 정보를 불러오지 못했습니다: ${error.message}`);
+  return (data ?? []) as DepartmentRow[];
+}
