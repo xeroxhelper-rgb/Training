@@ -36,7 +36,7 @@ export async function saveCompletionStatuses(formData: FormData) {
     { onConflict: "session_id,employee_id" },
   );
   if (error) redirect(`/sessions/${sessionId}?error=${encodeURIComponent(error.message)}`);
-  redirect(`/sessions/${sessionId}?saved=${employeeIds.length}`);
+  redirect(`/sessions?saved=${employeeIds.length}`);
 }
 
 export async function removeParticipant(formData: FormData) {
